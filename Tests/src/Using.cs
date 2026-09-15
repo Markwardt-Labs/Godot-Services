@@ -1,0 +1,8 @@
+global using System.Reflection;
+global using System.Runtime.CompilerServices;
+global using Godot;
+global using Markwardt.GodotServices;
+global using Markwardt.GodotServices.Internal;
+global using Microsoft.Extensions.DependencyInjection;
+global using Moq;
+global using Xunit;
