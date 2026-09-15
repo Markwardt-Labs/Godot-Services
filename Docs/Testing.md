@@ -44,10 +44,11 @@ fixture in a unit test. This is also why every registration extension method
   otherwise-unmockable concrete engine API behind an interface, so invoking them for real in a
   test would mean doing the exact unsafe thing they exist to let other code avoid. Each is
   marked `[ExcludeFromCodeCoverage]`;
-  `ServiceContainer` and `ServiceManager` likewise, since both touch a live `SceneTree` (`ServiceContainer`
-  subscribes to its `NodeAdded` signal directly; `ServiceManager` only delegates to
-  `ServiceContainer` from `_EnterTree`/`_ExitTree`, but is itself a `Node` that can't be
-  constructed outside the engine either) - all matched here and in the Cobertura report.
+  `ServiceContainer` and `ServiceManager` likewise, since both touch a live `SceneTree`
+  (`ServiceContainer` subscribes to its `NodeAdded` signal directly; `ServiceManager` builds one
+  via `Setup` from `_EnterTree`/`_ExitTree`, and calls `CallDeferred` besides, but is itself a
+  `Node` that can't be constructed outside the engine either) - all matched here and in the
+  Cobertura report.
 - `InMemorySetting<T>` is the one setting adapter that isn't `[ExcludeFromCodeCoverage]`: it stores
   its value purely in memory rather than reading/writing any engine API, so it's exercised by real
   unit tests like any other plain C# class.

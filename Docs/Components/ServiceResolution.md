@@ -1,7 +1,8 @@
 Covers `ServiceContainer`, `NodeInjector`, `NodeSingletonRegistry`, `ServiceCollectionExtensions`,
 and `ConventionScannableAssemblies`: the mechanics behind convention-based registration, `[Inject]`
 property population, and node-backed singleton resolution. `ServiceManager` is a thin `Node`
-wrapper around `ServiceContainer` and has no mechanics of its own beyond that delegation.
+wrapper around `ServiceContainer`, whose own mechanics are limited to *whether* and *when* to
+construct one - see "Why a test launch's own work is deferred" below.
 
 ## Discovering assemblies to scan
 
@@ -55,3 +56,15 @@ mid-resolution, so a premature resolution is a genuine ordering bug in the consu
 (usually: something in the initial tree resolving a node-backed singleton whose backing autoload
 enters the tree later than it). Failing loudly and immediately surfaces that bug at the exact
 resolution call site, instead of leaving a caller silently holding `null`.
+
+## Why a test launch's own work is deferred
+
+`ServiceManager._EnterTree` calls `OnTestLaunch` through `CallDeferred` rather than directly, when
+`IsTestLaunch` says this launch is a test run rather than the real application. `_EnterTree` runs
+during the scene-tree-attach phase for the *entire* initial tree (every autoload plus the main
+scene) - the same phase `NodeAdded`/capture/inject already relies on finishing before `_Ready`
+(see "Capture before inject, every time" above) - so the engine is still mid-way through its own
+tree-entry bookkeeping for that whole batch when `_EnterTree` runs. `OnTestLaunch` typically needs
+to freely add and free nodes (a test runner setting up and tearing down each test's fixtures,
+say); `CallDeferred` postpones that until the next idle frame, once the initial tree has fully
+settled, rather than mutating the tree while the engine is still walking it.

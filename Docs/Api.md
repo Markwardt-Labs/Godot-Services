@@ -56,6 +56,30 @@ directly too, for a project that would rather manage its own lifetime than exten
    before that node's own `_Ready` runs.
 5. `ServiceManager._ExitTree` disposes the `ServiceContainer`, which unsubscribes from `NodeAdded`.
 
+## Skipping setup for a test launch
+
+Sometimes a process launched through the game's own entry point isn't meant to run the game at
+all - a command-line-triggered test run, say. Override `IsTestLaunch` to recognize that condition
+(by inspecting `OS.GetCmdlineArgs()` for a test runner's own flag, for instance), and
+`OnTestLaunch` to run whatever it should do instead - deferred to the next idle frame, since
+`_EnterTree` itself runs mid-way through the entire initial tree entering the scene tree, before
+any node's `_Ready`, making scene-tree mutation (adding/freeing nodes, as a test runner typically
+needs to do) unsafe to do synchronously from there:
+
+```csharp
+public partial class GameServices : ServiceManager
+{
+    protected override bool IsTestLaunch() => OS.GetCmdlineArgs().Contains("--run-tests");
+
+    protected override void OnTestLaunch() => MyTestRunner.Run();
+}
+```
+
+`Setup` - the method `_EnterTree` normally calls to build the `ServiceContainer` - is itself
+`protected`, so a project whose `IsTestLaunch` always returns `true` during a real test session
+can still call it directly from a test, to exercise the real, convention-built container end to
+end.
+
 ## Registering services: convention over configuration
 
 Any concrete, non-generic, non-`Node` class that implements an interface named after itself (e.g.
